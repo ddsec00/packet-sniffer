@@ -1,6 +1,6 @@
 import socket
 def create_sniffer():
-    sniffer = socket.socket(socket.AF_INET,
+    sniffer = socket.socket(socket.AF_PACKET,
      socket.SOCK_RAW,
     socket.ntohs(0x0003)
       )
@@ -8,6 +8,5 @@ def create_sniffer():
     
     
     return sniffer
-
 
 
