@@ -1,10 +1,15 @@
+import sys
+
 from sniffer import create_sniffer
 from parser import parse_ethernet_frame
 
 
 def main():
-    # CHANGE THIS if needed: "eth0", "wlan0", "enp0s3"
-    interface = "eth0"
+    if len(sys.argv) < 2:
+        print("Usage: sudo python3 src/main.py <interface>")
+        sys.exit(1)
+
+    interface = sys.argv[1]
 
     sniffer = create_sniffer(interface)
 
