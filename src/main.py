@@ -1,31 +1,30 @@
-import sys
-
 from sniffer import create_sniffer
-from parser import parse_ethernet_frame
+from parser import parse_ethernet_frame, parse_ipv4_packet
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: sudo python3 src/main.py <interface>")
-        sys.exit(1)
+    sniffer = create_sniffer()
 
-    interface = sys.argv[1]
-
-    sniffer = create_sniffer(interface)
-
-    print(f"Packet sniffer started on {interface}...")
+    print("Packet sniffer started...")
 
     while True:
         raw_data, addr = sniffer.recvfrom(65535)
 
         eth = parse_ethernet_frame(raw_data)
 
-        print(
-            f"Src MAC: {eth['source_mac']} → "
-            f"Dst MAC: {eth['destination_mac']} | "
-            f"Proto: {eth['protocol']} | "
-            f"Size: {len(raw_data)} bytes"
-        )
+        # Only IPv4 packets (0x0800 = 2048)
+        if eth["protocol"] == 2048:
+            ip = parse_ipv4_packet(eth["payload"])
+
+            print(
+                f"IP {ip['source_ip']} → {ip['destination_ip']} "
+                f"| Proto: {ip['protocol']} | TTL: {ip['ttl']} | Size: {len(raw_data)}"
+            )
+        else:
+            print(
+                f"Ethernet | {eth['source_mac']} → {eth['destination_mac']} "
+                f"| Proto: {eth['protocol']}"
+            )
 
 
 if __name__ == "__main__":
