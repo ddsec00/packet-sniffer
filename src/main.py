@@ -3,7 +3,8 @@ from parser import (
     parse_ethernet_frame,
     parse_ipv4_packet,
     parse_tcp_segment,
-    parse_udp_segment
+    parse_udp_segment,
+    get_service_name
 )
 
 
@@ -17,47 +18,53 @@ def main():
 
         eth = parse_ethernet_frame(raw_data)
 
-        # IPv4 packets only
+        # Only IPv4 packets
         if eth["protocol"] == 2048:
 
             ip = parse_ipv4_packet(eth["payload"])
 
-            # ICMP (Ping)
+            # ICMP (ping)
             if ip["protocol"] == 1:
                 print(
                     f"ICMP {ip['source_ip']} → {ip['destination_ip']}"
                 )
 
-            # TCP
+            # TCP traffic
             elif ip["protocol"] == 6:
                 tcp = parse_tcp_segment(ip["payload"])
 
+                service = get_service_name(tcp["destination_port"])
+
                 print(
-                    f"TCP {ip['source_ip']}:{tcp['source_port']} "
+                    f"{service} TCP "
+                    f"{ip['source_ip']}:{tcp['source_port']} "
                     f"→ {ip['destination_ip']}:{tcp['destination_port']}"
                 )
 
-            # UDP
+            # UDP traffic
             elif ip["protocol"] == 17:
                 udp = parse_udp_segment(ip["payload"])
 
+                service = get_service_name(udp["destination_port"])
+
                 print(
-                    f"UDP {ip['source_ip']}:{udp['source_port']} "
+                    f"{service} UDP "
+                    f"{ip['source_ip']}:{udp['source_port']} "
                     f"→ {ip['destination_ip']}:{udp['destination_port']}"
                 )
 
-            # Any other IP protocol
+            # Other IP protocols
             else:
                 print(
                     f"IP {ip['source_ip']} → {ip['destination_ip']} "
-                    f"| Proto: {ip['protocol']}"
+                    f"| Proto {ip['protocol']}"
                 )
 
         # Non-IPv4 Ethernet frames
         else:
             print(
                 f"Ethernet | {eth['source_mac']} → {eth['destination_mac']} "
-                f"| Proto: {eth['protocol']}"
+                f"| Proto {eth['protocol']}"
             )
 
 
