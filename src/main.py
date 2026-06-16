@@ -18,6 +18,11 @@ def main():
         help="Filter only TCP packets"
     
     )
+    parser.add_argument(
+        "--udp",
+        action="store_true",
+        help="Filter only UDP packets"
+    )
     args = parser.parse_args()
     sniffer = create_sniffer()
 
@@ -34,6 +39,8 @@ def main():
             ip = parse_ipv4_packet(eth["payload"])
 
             if args.tcp and ip["protocol"] != 6:
+                continue
+            if args.udp and ip["protocol"] != 17:
                 continue
 
             # ICMP (ping)
