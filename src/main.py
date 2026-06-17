@@ -103,12 +103,15 @@ def main():
             service = get_service_name(tcp["destination_port"])
 
             top_ports[tcp["destination_port"]] += 1
-
-            print(
+            log_entry = (
+                f"{time.strftime('%Y-%m-%d %H:%M:%S')} "
                 f"{direction} {service} TCP "
                 f"{ip['source_ip']}:{tcp['source_port']} "
                 f"→ {ip['destination_ip']}:{tcp['destination_port']}"
             )
+
+            print(log_entry)
+            log_packet(log_entry)
 
         # ---------------- UDP ----------------
         elif ip["protocol"] == 17:
