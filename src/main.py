@@ -56,6 +56,10 @@ def main():
     print("Sniffer running...\n")
 
     log_file = open("traffic.log", "a")
+    log_file.write("\n" + "=" * 50 + "\n")
+    log_file.write(f"Sniffer started at {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+    log_file.write("=" * 50 + "\n")
+    log_file.flush()
 
     def log_packet(text):
         log_file.write(text + "\n")
