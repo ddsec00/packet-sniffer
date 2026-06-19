@@ -135,15 +135,20 @@ def main():
             # port scan detection script
             source_ip = ip["source_ip"]
             if source_ip not in port_scan_tracker:
-                port_scan_tracker[source_ip] = set()
-            port_scan_tracker[source_ip].add(
-                tcp["destination_port"]
-            )
-            if len(port_scan_tracker[source_ip]) >= 10:
-                print(
-                    f"⚠ ALERT: Possible port scan from "
-                    f"{source_ip}"
-                )
+                port_scan_tracker[source_ip] = {
+                    "ports": set(),
+                    "first_seen": current_time,
+                    "alerted": False
+                }
+            # reset if tracking window expired
+            if current_time - port_scan_tracker[source_ip]["first_seen"] > 30:
+                port_scan_tracker[source_ip] = {
+                    "ports": set(),
+                    "first_seen": current_time,
+                    "alerted": False
+                }
+            
+            
             hostname = resolve_hostname(ip["destination_ip"])
 
             log_entry = (
