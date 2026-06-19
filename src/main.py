@@ -88,6 +88,8 @@ def main():
     top_destinations = Counter()
     top_ports = Counter()
     top_domains = Counter()
+    # IDS feature: port scan detection
+    port_scan_tracker = {}
 
     last_print = time.time()
 
@@ -130,6 +132,18 @@ def main():
             service = get_service_name(tcp["destination_port"])
 
             top_ports[tcp["destination_port"]] += 1
+            # port scan detection script
+            source_ip = ip["source_ip"]
+            if source_ip not in port_scan_tracker:
+                port_scan_tracker[source_ip] = set()
+            port_scan_tracker[source_ip].add(
+                tcp["destination_port"]
+            )
+            if len(port_scan_tracker[source_ip]) >= 10:
+                print(
+                    f"⚠ ALERT: Possible port scan from "
+                    f"{source_ip}"
+                )
             hostname = resolve_hostname(ip["destination_ip"])
 
             log_entry = (
