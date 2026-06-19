@@ -147,7 +147,10 @@ def main():
                     "first_seen": current_time,
                     "alerted": False
                 }
-            
+            # adding current destination port 
+            port_scan_tracker[source_ip]["ports"].add(
+                tcp["destination_port"]
+            )
             
             hostname = resolve_hostname(ip["destination_ip"])
 
