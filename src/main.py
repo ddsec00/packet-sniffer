@@ -129,6 +129,8 @@ def main():
             tcp_count += 1
 
             tcp = parse_tcp_segment(ip["payload"])
+            if tcp["syn"] and not tcp["ack"] and direction == "IN":
+                print(f"⚠ SYN SCAN SUSPECT: {ip['source_ip']} → port {tcp['destination_port']}")
 
             if tcp["syn"]:
                 print("TCP FLAG: SYN")
@@ -173,6 +175,7 @@ def main():
 
                 # 3. update tracking data
                 tracker["ports"].add(tcp["destination_port"])
+                tracker["last_seen"] = current_time
                 tracker["attempts"] += 1
 
                 unique_ports = len(tracker["ports"])
