@@ -132,44 +132,68 @@ def main():
             service = get_service_name(tcp["destination_port"])
 
             top_ports[tcp["destination_port"]] += 1
-            # port scan detection (incoming traffic only)
+            # =====================================================
+            # PORT SCAN DETECTION (IMPROVED IDS LOGIC)
+            #
             if direction == "IN":
                 source_ip = ip["source_ip"]
                 current_time = time.time()
 
+                # 1. initialize tracking structure if new IP
                 if source_ip not in port_scan_tracker:
                     port_scan_tracker[source_ip] = {
-                        "ports": set(),
+                        "ports": set(),          # unique ports targeted
+                        "attempts": 0,           # total attempts
                         "first_seen": current_time,
                         "alerted": False
                     }
-                # reset tracking window after 30 seconds
-                if current_time - port_scan_tracker[source_ip]["first_seen"] > 30:
-                    port_scan_tracker[source_ip] = {
-                        "ports": set(),
-                        "first_seen": current_time,
-                        "alerted": False
-                    }
-                # record destination port being targeted
-                port_scan_tracker[source_ip]["ports"].add(
-                    tcp["destination_port"]
-                )
-                # trigger alert only once
+                tracker = port_scan_tracker[source_ip]
+
+
+                # 2. reset if 30-second window expired
+                if current_time - tracker["first_seen"] > 30:
+                    tracker["ports"] = set()
+                    tracker["attempts"] = 0
+                    tracker["first_seen"] = current_time
+                    tracker["alerted"] = False
+
+
+                # 3. update tracking data
+                tracker["ports"].add(tcp["destination_port"])
+                tracker["attempts"] += 1
+
+                unique_ports = len(tracker["ports"])
+                attempts = tracker["attempts"]
+
+                # 4. compute scan behaviour logic
+                scan_ratio = unique_ports / attempts if attempts > 0 else 0
+
+                # 5. detection logic 
                 if (
-                    len(port_scan_tracker[source_ip]["ports"]) >= 10 and
-                    not port_scan_tracker[source_ip]["alerted"]
+                    unique_ports >= 8 and      # scanned many ports
+                    attempts >= 10 and         # enough activity
+                    scan_ratio > 0.7 and       # mostly unique ports → scan pattern
+                    not tracker["alerted"]     # prevent spam alerts
                 ):
                     print(
-                        f"⚠ ALERT: Possible port scan from "
-                        f"{source_ip} "
-                        f"({len(port_scan_tracker[source_ip]['ports'])} ports)"
+                          f"⚠ PORT SCAN DETECTED from {source_ip} "
+                          f"(unique={unique_ports}, attempts={attempts}, ratio={scan_ratio:.2f})"
                     )
+
                     log_packet(
-                        f"ALERT: Possible port scan from "
-                        f"{source_ip} "
-                        f"({len(port_scan_tracker[source_ip]['ports'])} ports)"
+                        f"PORT SCAN ALERT {source_ip} "
+                        f"unique={unique_ports} attempts={attempts} ratio={scan_ratio:.2f}"
                     )
-                    port_scan_tracker[source_ip]["alerted"] = True
+
+                    tracker["alerted"] = True
+       
+                
+                
+
+                    
+                
+
+                
 
                         
                  
