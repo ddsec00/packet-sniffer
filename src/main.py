@@ -229,7 +229,7 @@ def main():
                 f"→ {ip['destination_ip']}:{tcp['destination_port']} ({hostname})"
             )
 
-            print(log_entry)
+            print(f"[{direction}] TCP {service} {ip['source_ip']}:{tcp['source_port']} → {ip['destination_ip']}:{tcp['destination_port']}")
             log_packet(log_entry)
 
         # =====================================================
