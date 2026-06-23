@@ -149,7 +149,22 @@ def main():
                       f"CONNECTION TRACKER: "
                       f"{connection_key} -> SYN_SENT"
                 )
-                
+                if tcp["syn"] and tcp["ack"]:
+                    reverse_key = (
+                        ip["destination_ip"],
+                        tcp["destination_port"],
+                        ip["source_ip"],
+                        tcp["source_port"]
+                    )
+                    if reverse_key in connection_tracker:
+                        connection_tracker[reverse_key]["state"] = (
+                            "SYN_ACK_RECEIVED"
+                        )
+                        print(
+                             f"CONNECTION TRACKER: "
+                             f"{reverse_key} -> SYN_ACK_RECEIVED"
+                        )
+
                     
                 
             # =====================================================
