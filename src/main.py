@@ -92,6 +92,8 @@ def main():
     port_scan_tracker = {}
     # IDS feature: SYN flood detection
     syn_flood_tracker = {}
+    # IDS feature: connection tracking
+    connection_tracker = {}
 
     last_print = time.time()
 
@@ -131,6 +133,12 @@ def main():
             tcp_count += 1
 
             tcp = parse_tcp_segment(ip["payload"])
+            connection_key = (
+                ip["source_ip"],
+                tcp["source_port"],
+                ip["destination_ip"],
+                tcp["destination_port"]
+            )
             # =====================================================
             # SYN FLOOD DETECTION
             # =====================================================
