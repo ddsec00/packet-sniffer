@@ -68,7 +68,8 @@ def parse_tcp_segment(data):
 
     src_port, dst_port = struct.unpack("!HH", data[:4])
 
-    flags = data[13]
+    offset = (data[12] >> 4) * 4
+    flags = data[offset - 1]
 
     return {
         "source_port": src_port,

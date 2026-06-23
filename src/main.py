@@ -35,7 +35,7 @@ def get_local_ip():
         return s.getsockname()[0]
     finally:
         s.close()
-
+# Get local ips function
 def get_all_local_ips():
     ips = []
     for iface in netifaces.interfaces():
@@ -49,10 +49,10 @@ def get_all_local_ips():
 # =========================================================
 # DETERMINE PACKET DIRECTION
 # =========================================================
-def get_direction(src_ip, dst_ip, local_ip):
-    if src_ip == local_ip:
+def get_direction(src_ip, dst_ip, local_ips):
+    if src_ip in local_ips:
         return "OUT"
-    elif dst_ip == local_ip:
+    elif dst_ip in local_ips:
         return "IN"
     else:
         return "OTHER"
@@ -75,9 +75,9 @@ def main():
     args = get_args()
 
     sniffer = create_sniffer()
-    local_ip = get_local_ip()
+    local_ips = get_all_local_ips()
+    print(f"Local IPs: {local_ips}")
 
-    print(f"Local IP: {local_ip}")
     print("Sniffer running...\n")
 
     # ---------------- LOG FILE ----------------
@@ -129,7 +129,7 @@ def main():
         direction = get_direction(
             ip["source_ip"],
             ip["destination_ip"],
-            local_ip
+            local_ips
         )
 
         # =====================================================
