@@ -90,6 +90,8 @@ def main():
     top_domains = Counter()
     # IDS feature: port scan detection
     port_scan_tracker = {}
+    # IDS feature: SYN flood detection
+    syn_flood_tracker = {}
 
     last_print = time.time()
 
@@ -129,9 +131,43 @@ def main():
             tcp_count += 1
 
             tcp = parse_tcp_segment(ip["payload"])
+            # =====================================================
+            # SYN FLOOD DETECTION
+            # =====================================================
             if tcp["syn"] and not tcp["ack"] and direction == "IN":
-                print(f"⚠ SYN SCAN SUSPECT: {ip['source_ip']} → port {tcp['destination_port']}")
+                 source_ip = ip["source_ip"]
+                 current_time = time.time()
 
+                 if source_ip not in syn_flood_tracker:
+                     syn_flood_tracker[source_ip] = {
+                         "syn_count": 0,
+                         "first_seen": current_time,
+                         "alerted": False
+                     }
+                 tracker = syn_flood_tracker[source_ip]
+                
+
+                # reset window after 10 seconds
+                 if current_time - tracker["first_seen"] > 10:
+                    tracker["syn_count"] = 0
+                    tracker["first_seen"] = current_time
+                    tracker["alerted"] = False
+                 tracker["syn_count"] += 1
+                
+                 if (
+                    tracker["syn_count"] >= 100
+                    and not tracker["alerted"]
+                ):
+                    alert_message = (
+                        f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}]\n"
+                        f"⚠ SYN FLOOD DETECTED\n"
+                        f"Source: {source_ip}\n"
+                        f"SYN Packets: {tracker['syn_count']}\n"
+                        f"Window: 10 seconds\n"
+                    )
+                    print(alert_message)
+                    log_packet(alert_message)
+                    tracker["alerted"] = True
             if tcp["syn"]:
                 print("TCP FLAG: SYN")
 
