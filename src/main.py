@@ -147,6 +147,36 @@ def main():
 
             tcp = parse_tcp_segment(ip["payload"])
             print(f"DEBUG FLAGS → SYN:{tcp['syn']} ACK:{tcp['ack']} RST:{tcp['rst']} FIN:{tcp['fin']}")
+
+            # =====================================================
+            # CONNECTION ESTABLISHED DETECTION (ACK FINAL STEP)
+            # =====================================================
+            if tcp["ack"] and not tcp["syn"]:
+
+                forward_key = (
+                    ip["source_ip"],
+                    tcp["source_port"],
+                    ip["destination_ip"],
+                    tcp["destination_port"]
+                )
+
+                reverse_key = (
+                    ip["destination_ip"],
+                    tcp["destination_port"],
+                    ip["source_ip"],
+                    tcp["source_port"]
+                )
+
+                if reverse_key in connection_tracker:
+
+                    if connection_tracker[reverse_key]["state"] == "SYN_ACK_RECEIVED":
+
+                        connection_tracker[reverse_key]["state"] = "ESTABLISHED"
+
+                        print(
+                            f"CONNECTION TRACKER: "
+                            f"{reverse_key} -> ESTABLISHED"
+                        )
             connection_key = (
                 ip["source_ip"],
                 tcp["source_port"],
@@ -258,35 +288,45 @@ def main():
                 and not tcp["rst"]
                 and not tcp["fin"]
             ):
-                print("\n--- ACK DEBUG ---")
-                print(
-                    f"ACK PACKET: "
-                    f"{ip['source_ip']}:{tcp['source_port']} -> "
-                    f"{ip['destination_ip']}:{tcp['destination_port']}"
-                )
+                if (
+                    ip["source_ip"] == "192.168.0.117"
+                    or ip["destination_ip"] == "192.168.0.117"
+                ):
 
-                for key in connection_tracker:
-                    print(f"TRACKED: {key}")
+                    print("\n--- ACK DEBUG ---")
+                    print(
+                        f"ACK PACKET: "
+                        f"{ip['source_ip']}:{tcp['source_port']} -> "
+                        f"{ip['destination_ip']}:{tcp['destination_port']}"
+                    )
 
-                connection_key = (
-                    ip["source_ip"],
-                    tcp["source_port"],
-                    ip["destination_ip"],
-                    tcp["destination_port"]
-                )
-                print(f"ACK KEY: {connection_key}")
-                print(f"KNOWN KEYS: {list(connection_tracker.keys())}")
+                    for key in connection_tracker:
+                        if (
+                            "192.168.0.117" in key
+                            and "192.168.0.141" in key
+                        ):
+                            print(f"TRACKED: {key}")
 
-                if connection_key in connection_tracker:
+                # ACK (handshake completed)
+                if tcp["ack"] and not tcp["syn"]:
 
-                    if (
-                        connection_tracker[connection_key]["state"]
-                        == "SYN_ACK_RECEIVED"
-                    ):
+                    reverse_key = (
+                        ip["destination_ip"],
+                        tcp["destination_port"],
+                        ip["source_ip"],
+                        tcp["source_port"]
+                    )
 
-                        connection_tracker[connection_key]["state"] = (
-                            "ESTABLISHED"
-                        )
+                    if reverse_key in connection_tracker:
+
+                        if connection_tracker[reverse_key]["state"] == "SYN_ACK_RECEIVED":
+
+                            connection_tracker[reverse_key]["state"] = "ESTABLISHED"
+
+                            print(
+                                f"CONNECTION TRACKER: "
+                                f"{reverse_key} -> ESTABLISHED"
+                            )
 
                         print(
                             f"CONNECTION TRACKER: "
