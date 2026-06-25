@@ -146,154 +146,98 @@ def main():
             tcp_count += 1
 
             tcp = parse_tcp_segment(ip["payload"])
-            current_time = time.time()
+
+            src = ip["source_ip"]
+            dst = ip["destination_ip"]
+            sport = tcp["source_port"]
+            dport = tcp["destination_port"]
+
+            forward_key = (src, sport, dst, dport)
+            reverse_key = (dst, dport, src, sport)
+
             print(f"DEBUG FLAGS → SYN:{tcp['syn']} ACK:{tcp['ack']} RST:{tcp['rst']} FIN:{tcp['fin']}")
 
-            
-                        
-            connection_key = (
-                ip["source_ip"],
-                tcp["source_port"],
-                ip["destination_ip"],
-                tcp["destination_port"]
-            )
-            if tcp["syn"] and not tcp["ack"]:
-                connection_tracker[connection_key] = {
-                    "state": "SYN_SENT",
-                    "created": time.time(),
-                    "last_seen": time.time()
-                }
-
-                print(
-                      f"CONNECTION TRACKER: "
-                      f"{connection_key} -> SYN_SENT"
-                )
-            
-
-                    
             # =====================================================
-            # SYN FLOOD DETECTION
+            # SYN (client → server)
+            # =====================================================
+            if tcp["syn"] and not tcp["ack"]:
+                if forward_key not in connection_tracker:
+                    connection_tracker[forward_key] = {
+                        "state": "SYN_SENT",
+                        "created": time.time()
+                    }
+                    print(f"CONNECTION TRACKER: {forward_key} -> SYN_SENT")
+
+            # =====================================================
+            # SYN FLOOD DETECTION (SAFE VERSION)
             # =====================================================
             if tcp["syn"] and not tcp["ack"] and direction == "IN":
-                 source_ip = ip["source_ip"]
-                 current_time = time.time()
 
-                 if source_ip not in syn_flood_tracker:
-                     syn_flood_tracker[source_ip] = {
-                         "syn_count": 0,
-                         "first_seen": current_time,
-                         "alerted": False
-                     }
-                 tracker = syn_flood_tracker[source_ip]
-                
+                source_ip = ip["source_ip"]
+                current_time = time.time()
 
-                # reset window after 10 seconds
-                 if current_time - tracker["first_seen"] > 5:
+                if source_ip not in syn_flood_tracker:
+                    syn_flood_tracker[source_ip] = {
+                        "syn_count": 0,
+                        "first_seen": current_time,
+                        "alerted": False
+                    }
+
+                tracker = syn_flood_tracker[source_ip]
+
+                # reset window (5 seconds)
+                if current_time - tracker["first_seen"] > 5:
                     tracker["syn_count"] = 0
                     tracker["first_seen"] = current_time
                     tracker["alerted"] = False
-                 tracker["syn_count"] += 1
-                
-                 if (
-                    tracker["syn_count"] >= 20
-                    and not tracker["alerted"]
-                ):
+
+                tracker["syn_count"] += 1
+
+                if tracker["syn_count"] >= 20 and not tracker["alerted"]:
                     alert_message = (
                         f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}]\n"
                         f"⚠ SYN FLOOD DETECTED\n"
                         f"Source: {source_ip}\n"
                         f"SYN Packets: {tracker['syn_count']}\n"
-                        f"Window: 10 seconds\n"
+                        f"Window: 5 seconds\n"
                     )
+
                     print(alert_message)
                     log_packet(alert_message)
                     tracker["alerted"] = True
+
+            # =====================================================
+            # SYN-ACK (server → client)
+            # =====================================================
+            elif tcp["syn"] and tcp["ack"]:
+                if reverse_key in connection_tracker:
+                    if connection_tracker[reverse_key]["state"] == "SYN_SENT":
+                        connection_tracker[reverse_key]["state"] = "SYN_ACK_RECEIVED"
+                        print(f"CONNECTION TRACKER: {reverse_key} -> SYN_ACK_RECEIVED")
+
+            # =====================================================
+            # ACK (final handshake → ESTABLISHED)
+            # =====================================================
+            elif tcp["ack"] and not tcp["syn"]:
+                if forward_key in connection_tracker:
+                    if connection_tracker[forward_key]["state"] == "SYN_ACK_RECEIVED":
+                        connection_tracker[forward_key]["state"] = "ESTABLISHED"
+                        print(f"CONNECTION TRACKER: {forward_key} -> ESTABLISHED")
+
+            # =====================================================
+            # FLAGS DEBUG (optional but clean)
+            # =====================================================
             if tcp["syn"]:
                 print("TCP FLAG: SYN")
-
             if tcp["ack"]:
                 print("TCP FLAG: ACK")
-
             if tcp["rst"]:
                 print("TCP FLAG: RST")
-
             if tcp["fin"]:
                 print("TCP FLAG: FIN")
 
-            service = get_service_name(tcp["destination_port"])
-
-            top_ports[tcp["destination_port"]] += 1
-
-            if tcp["syn"] and tcp["ack"]:
-                if ip["destination_ip"] in local_ips:
-
-                    matched_key = None
-
-                    for key in connection_tracker:
-                        if (
-                            key[0] == ip["source_ip"] and
-                            key[1] == tcp["source_port"] and
-                            key[2] == ip["destination_ip"] and
-                            key[3] == tcp["destination_port"]
-                        ):
-                            matched_key = key
-                            break
-
-                    if matched_key:
-                        connection_tracker[matched_key]["state"] = "SYN_ACK_RECEIVED"
-
-                        print(
-                            f"CONNECTION TRACKER: "
-                            f"{matched_key} -> SYN_ACK_RECEIVED"
-                        )
-
-            # ACK (handshake completed)
-            if (
-                tcp["ack"]
-                and not tcp["syn"]
-                and not tcp["rst"]
-                and not tcp["fin"]
-            ):
-                if (
-                    ip["source_ip"] == "192.168.0.117"
-                    or ip["destination_ip"] == "192.168.0.117"
-                ):
-
-                    print("\n--- ACK DEBUG ---")
-                    print(
-                        f"ACK PACKET: "
-                        f"{ip['source_ip']}:{tcp['source_port']} -> "
-                        f"{ip['destination_ip']}:{tcp['destination_port']}"
-                    )
-
-                    for key in connection_tracker:
-                        if (
-                            "192.168.0.117" in key
-                            and "192.168.0.141" in key
-                        ):
-                            print(f"TRACKED: {key}")
-
-                # ACK (handshake completed)
-                if tcp["ack"] and not tcp["syn"]:
-
-                    reverse_key = (
-                        ip["destination_ip"],
-                        tcp["destination_port"],
-                        ip["source_ip"],
-                        tcp["source_port"]
-                    )
-
-                    if reverse_key in connection_tracker:
-
-                        if connection_tracker[reverse_key]["state"] == "SYN_ACK_RECEIVED":
-
-                            connection_tracker[reverse_key]["state"] = "ESTABLISHED"
-
-                            print(
-                                f"CONNECTION TRACKER: "
-                                f"{reverse_key} -> ESTABLISHED"
-                            )
-
+            service = get_service_name(dport)
+            top_ports[dport] += 1
                        
             # =====================================================
             # PORT SCAN DETECTION (IMPROVED IDS LOGIC)
