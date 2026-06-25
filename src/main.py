@@ -169,16 +169,7 @@ def main():
                         "created": time.time()
                     }
                     print(f"CONNECTION TRACKER: {forward_key} -> SYN_SENT")
-                    event_log.append({
-                        "type": "connection",
-                        "state": "SYN_SENT",
-                        "src": ip["source_ip"],
-                        "dst": ip["destination_ip"],
-                        "sport": tcp["source_port"],
-                        "dport": tcp["destination_port"],
-                        "time": time.time()
-                    })
-                    print("EVENT LOG SIZE:", len(event_log))
+                    
 
 
             # =====================================================
@@ -227,16 +218,7 @@ def main():
                     if connection_tracker[reverse_key]["state"] == "SYN_SENT":
                         connection_tracker[reverse_key]["state"] = "SYN_ACK_RECEIVED"
                         print(f"CONNECTION TRACKER: {reverse_key} -> SYN_ACK_RECEIVED")
-                        event_log.append({
-                            "type": "connection",
-                            "state": "SYN_ACK_RECEIVED",
-                            "src": ip["source_ip"],
-                            "dst": ip["destination_ip"],
-                            "sport": tcp["source_port"],
-                            "dport": tcp["destination_port"],
-                            "time": time.time()
-                        })
-                        print("EVENT LOG SIZE:", len(event_log))
+                        
 
             # =====================================================
             # ACK (final handshake → ESTABLISHED)
@@ -247,15 +229,10 @@ def main():
                         connection_tracker[forward_key]["state"] = "ESTABLISHED"
                         print(f"CONNECTION TRACKER: {forward_key} -> ESTABLISHED")
                         event_log.append({
-                            "type": "connection",
-                            "state": "ESTABLISHED",
-                            "src": ip["source_ip"],
-                            "dst": ip["destination_ip"],
-                            "sport": tcp["source_port"],
-                            "dport": tcp["destination_port"],
-                            "time": time.time()
+                            "time": time.strftime("%H:%M:%S"),
+                            "event": "ESTABLISHED",
+                            "connection": str(reverse_key)
                         })
-                        print("EVENT LOG SIZE:", len(event_log))
 
             # =====================================================
             # FLAGS DEBUG (optional but clean)
