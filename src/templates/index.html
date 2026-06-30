@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Network IDS Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+
+        h1 {
+            color: #38bdf8;
+        }
+
+        .box {
+            margin: 10px;
+            padding: 10px;
+            background: #1e293b;
+            border-radius: 8px;
+        }
+
+        .event {
+            padding: 5px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .alert {
+            color: #f87171;
+        }
+
+        .ok {
+            color: #4ade80;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Live Network IDS Dashboard</h1>
+
+    <div class="box">
+        <h2>Events</h2>
+        <div id="events"></div>
+    </div>
+
+    <div class="box">
+        <h2>Connections</h2>
+        <div id="connections"></div>
+    </div>
+
+    <script>
+
+        async function loadData() {
+
+            // EVENTS
+            let eventsRes = await fetch("/api/events");
+            let events = await eventsRes.json();
+
+            let eventsHTML = "";
+
+            events.slice().reverse().forEach(e => {
+                eventsHTML += `
+            <div class="event ${e.event === 'SYN_FLOOD' ? 'alert' : 'ok'}">
+                ${e.time} - ${e.event} - ${e.source || e.connection || ''}
+            </div>
+        `;
+            });
+
+            document.getElementById("events").innerHTML = eventsHTML;
+
+
+            // CONNECTIONS
+            let connRes = await fetch("/api/connections");
+            let conns = await connRes.json();
+
+            let connHTML = "";
+
+            for (let key in conns) {
+                connHTML += `
+            <div class="event">
+                ${key} → ${conns[key].state}
+            </div>
+        `;
+            }
+
+            document.getElementById("connections").innerHTML = connHTML;
+        }
+
+        setInterval(loadData, 1000);
+        loadData();
+
+    </script>
+
+</body>
+
+</html>
