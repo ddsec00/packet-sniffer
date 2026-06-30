@@ -229,6 +229,11 @@ def main():
                     if connection_tracker[reverse_key]["state"] == "SYN_SENT":
                         connection_tracker[reverse_key]["state"] = "SYN_ACK_RECEIVED"
                         print(f"CONNECTION TRACKER: {reverse_key} -> SYN_ACK_RECEIVED")
+                        event_log.append({
+                            "time": time.strftime("%H:%M:%S"),
+                            "event": "SYN_ACK_RECEIVED",
+                            "connection": str(reverse_key)
+                        })
                         
 
             # =====================================================
