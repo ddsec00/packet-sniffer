@@ -245,6 +245,9 @@ def main():
                         "source": source_ip,
                         "count": tracker["syn_count"]
                     })
+                    # Keep only the newest 100 events.
+                    if len(event_log) > 100:
+                        event_log.pop(0)
                     tracker["alerted"] = True
 
             # =====================================================
@@ -275,6 +278,9 @@ def main():
                             "event": "ESTABLISHED",
                             "connection": str(reverse_key)
                         })
+                        # Keep only the newest 100 events.
+                        if len(event_log) > 100:
+                           event_log.pop(0)
 
             # =====================================================
             # FLAGS DEBUG (optional but clean)
@@ -356,6 +362,9 @@ def main():
                         "source": source_ip,
                         "ports": unique_ports
                     })
+                    # Keep only the newest 100 events.
+                    if len(event_log) > 100:
+                        event_log.pop(0)
 
                     tracker["alerted"] = True
                     
