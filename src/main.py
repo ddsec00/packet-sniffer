@@ -2,6 +2,7 @@ import socket
 import argparse
 import time
 import netifaces
+import requests
 from collections import Counter
 
 from sniffer import create_sniffer
@@ -66,7 +67,27 @@ def resolve_hostname(ip):
         return socket.gethostbyaddr(ip)[0]
     except:
         return ip
+# =========================================================
+# Send the latest IDS data to the Flask dashboard
+# =========================================================
+def send_dashboard_update(events, connections, stats):
 
+    payload = {
+        "events": events,
+        "connections": connections,
+        "stats": stats
+    }
+
+    try:
+        requests.post(
+            "http://127.0.0.1:5000/update",
+            json=payload,
+            timeout=0.2
+        )
+
+    except requests.exceptions.RequestException:
+        # Ignore errors if the dashboard isn't running.
+        pass
 
 # =========================================================
 # MAIN PROGRAM
