@@ -474,6 +474,18 @@ def main():
                 print(f"  {domain}: {count}")
 
             print("-------------\n")
+            stats = {
+                "total_packets": total_packets,
+                "tcp": tcp_count,
+                "udp": udp_count,
+                "icmp": icmp_count,
+                "other": other_count
+            }
+            send_dashboard_update(
+                event_log,
+                connection_tracker,
+                stats
+            )
 
             last_print = time.time()
 
